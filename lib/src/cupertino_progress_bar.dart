@@ -7,18 +7,12 @@ class CupertinoVideoProgressBar extends StatefulWidget {
   CupertinoVideoProgressBar(
     this.controller, {
     ChewieProgressColors colors,
-    this.onDragEnd,
-    this.onDragStart,
-    this.onDragUpdate,
     Key key,
   })  : colors = colors ?? ChewieProgressColors(),
         super(key: key);
 
   final VideoPlayerController controller;
   final ChewieProgressColors colors;
-  final Function() onDragStart;
-  final Function() onDragEnd;
-  final Function() onDragUpdate;
 
   @override
   _VideoProgressBarState createState() {
@@ -33,13 +27,6 @@ class _VideoProgressBarState extends State<CupertinoVideoProgressBar> {
 
   @override
   Widget build(BuildContext context) {
-    void seekToRelativePosition(Offset globalPosition) {
-      final box = context.findRenderObject() as RenderBox;
-      final Offset tapPos = box.globalToLocal(globalPosition);
-      final double relative = tapPos.dx / box.size.width;
-      final Duration position = controller.value.duration * relative;
-      controller.seekTo(position);
-    }
 
     return GestureDetector(
       onHorizontalDragStart: (DragStartDetails details) {
@@ -50,35 +37,21 @@ class _VideoProgressBarState extends State<CupertinoVideoProgressBar> {
         if (_controllerWasPlaying) {
           controller.pause();
         }
-
-        if (widget.onDragStart != null) {
-          widget.onDragStart();
-        }
       },
       onHorizontalDragUpdate: (DragUpdateDetails details) {
         if (!controller.value.initialized) {
           return;
-        }
-        seekToRelativePosition(details.globalPosition);
-
-        if (widget.onDragUpdate != null) {
-          widget.onDragUpdate();
         }
       },
       onHorizontalDragEnd: (DragEndDetails details) {
         if (_controllerWasPlaying) {
           controller.play();
         }
-
-        if (widget.onDragEnd != null) {
-          widget.onDragEnd();
-        }
       },
       onTapDown: (TapDownDetails details) {
         if (!controller.value.initialized) {
           return;
         }
-        seekToRelativePosition(details.globalPosition);
       },
       child: Center(
         child: Container(

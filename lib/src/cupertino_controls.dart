@@ -155,14 +155,10 @@ class _CupertinoControlsState extends State<CupertinoControls> with SingleTicker
                     )
                   : Row(
                       children: <Widget>[
-                        _buildSkipBack(iconColor, barHeight),
                         _buildPlayPause(controller, iconColor, barHeight),
-                        _buildSkipForward(iconColor, barHeight),
                         _buildPosition(iconColor),
                         _buildProgressBar(),
                         _buildRemaining(iconColor),
-                        if (chewieController.allowPlaybackSpeedChanging)
-                          _buildSpeedButton(controller, iconColor, barHeight),
                       ],
                     ),
             ),
@@ -366,100 +362,6 @@ class _CupertinoControlsState extends State<CupertinoControls> with SingleTicker
     );
   }
 
-  GestureDetector _buildSkipBack(Color iconColor, double barHeight) {
-    return GestureDetector(
-      onTap: _skipBack,
-      child: Container(
-        height: barHeight,
-        color: Colors.transparent,
-        margin: const EdgeInsets.only(left: 10.0),
-        padding: const EdgeInsets.only(
-          left: 6.0,
-          right: 6.0,
-        ),
-        child: Icon(
-          CupertinoIcons.gobackward_15,
-          color: iconColor,
-          size: 18.0,
-        ),
-      ),
-    );
-  }
-
-  GestureDetector _buildSkipForward(Color iconColor, double barHeight) {
-    return GestureDetector(
-      onTap: _skipForward,
-      child: Container(
-        height: barHeight,
-        color: Colors.transparent,
-        padding: const EdgeInsets.only(
-          left: 6.0,
-          right: 8.0,
-        ),
-        margin: const EdgeInsets.only(
-          right: 8.0,
-        ),
-        child: Icon(
-          CupertinoIcons.goforward_15,
-          color: iconColor,
-          size: 18.0,
-        ),
-      ),
-    );
-  }
-
-  GestureDetector _buildSpeedButton(
-    VideoPlayerController controller,
-    Color iconColor,
-    double barHeight,
-  ) {
-    return GestureDetector(
-      onTap: () async {
-        _hideTimer?.cancel();
-
-        final chosenSpeed = await showCupertinoModalPopup<double>(
-          context: context,
-          semanticsDismissible: true,
-          useRootNavigator: true,
-          builder: (context) => _PlaybackSpeedDialog(
-            speeds: chewieController.playbackSpeeds,
-            selected: _latestValue.playbackSpeed,
-          ),
-        );
-
-        if (chosenSpeed != null) {
-          controller.setPlaybackSpeed(chosenSpeed);
-        }
-
-        if (_latestValue.isPlaying) {
-          _startHideTimer();
-        }
-      },
-      child: Container(
-        height: barHeight,
-        color: Colors.transparent,
-        padding: const EdgeInsets.only(
-          left: 6.0,
-          right: 8.0,
-        ),
-        margin: const EdgeInsets.only(
-          right: 8.0,
-        ),
-        child: Transform(
-          alignment: Alignment.center,
-          transform: Matrix4.skewY(0.0)
-            ..rotateX(math.pi)
-            ..rotateZ(math.pi * 0.8),
-          child: Icon(
-            Icons.speed,
-            color: iconColor,
-            size: 18.0,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildTopBar(
     Color backgroundColor,
     Color iconColor,
@@ -532,20 +434,6 @@ class _CupertinoControlsState extends State<CupertinoControls> with SingleTicker
         padding: const EdgeInsets.only(right: 12.0),
         child: CupertinoVideoProgressBar(
           controller,
-          onDragStart: () {
-            setState(() {
-              _dragging = true;
-            });
-
-            _hideTimer?.cancel();
-          },
-          onDragEnd: () {
-            setState(() {
-              _dragging = false;
-            });
-
-            _startHideTimer();
-          },
           colors: chewieController.cupertinoProgressColors ??
               ChewieProgressColors(
                 playedColor: const Color.fromARGB(
@@ -608,20 +496,6 @@ class _CupertinoControlsState extends State<CupertinoControls> with SingleTicker
     });
   }
 
-  void _skipBack() {
-    _cancelAndRestartTimer();
-    final beginning = const Duration().inMilliseconds;
-    final skip = (_latestValue.position - const Duration(seconds: 15)).inMilliseconds;
-    controller.seekTo(Duration(milliseconds: math.max(skip, beginning)));
-  }
-
-  void _skipForward() {
-    _cancelAndRestartTimer();
-    final end = _latestValue.duration.inMilliseconds;
-    final skip = (_latestValue.position + const Duration(seconds: 15)).inMilliseconds;
-    controller.seekTo(Duration(milliseconds: math.min(skip, end)));
-  }
-
   void _startHideTimer() {
     _hideTimer = Timer(const Duration(seconds: 3), () {
       setState(() {
@@ -635,42 +509,5 @@ class _CupertinoControlsState extends State<CupertinoControls> with SingleTicker
     setState(() {
       _latestValue = controller.value;
     });
-  }
-}
-
-class _PlaybackSpeedDialog extends StatelessWidget {
-  const _PlaybackSpeedDialog({
-    Key key,
-    @required List<double> speeds,
-    @required double selected,
-  })  : _speeds = speeds,
-        _selected = selected,
-        super(key: key);
-
-  final List<double> _speeds;
-  final double _selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final selectedColor = CupertinoTheme.of(context).primaryColor;
-
-    return CupertinoActionSheet(
-      actions: _speeds
-          .map(
-            (e) => CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.of(context).pop(e);
-              },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (e == _selected) Icon(Icons.check, size: 20.0, color: selectedColor),
-                  Text(e.toString()),
-                ],
-              ),
-            ),
-          )
-          .toList(),
-    );
   }
 }
